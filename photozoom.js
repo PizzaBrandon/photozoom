@@ -1,6 +1,6 @@
 /*!
  * PhotoZoom - jQuery Plugin
- * Version 0.2.0 - 2014-03-17
+ * Version 0.2.1 - 2014-03-18
  * https://github.com/PizzaBrandon/photozoom
  *
  * Copyright (c) 2014 by Brandon Belvin
@@ -136,6 +136,8 @@
                 lens.remove();
             }
             lens = null;
+            zoomContainer = null;
+            image = null;
 
             $(document).off('photozoom.imageready');
 
@@ -167,7 +169,7 @@
             }).appendTo(document.body);
 
         self.resize = function () {
-            var boundary = self.zoomBoundary = findElementBounds(target, options.clip);
+            var boundary = self.zoomBoundary = findElementBounds(target, true);
             container.css({
                 'top': boundary.top,
                 'left': boundary.left,
@@ -227,6 +229,10 @@
             container.remove();
             container = null;
 
+            image = null;
+            target = null;
+            imageObj = null;
+
             return self;
         };
     };
@@ -238,18 +244,24 @@
 
         function handleGalleryClick(e) {
             e.preventDefault();
-            var data = $(e.currentTarget).data();
+            var target = $(e.currentTarget);
+            var data = target.data();
+
+            gallery.find('.thumbnail-selected').removeClass('thumbnail-selected');
+            target.addClass('thumbnail-selected');
 
             image.switchImage(data.src, data.zoomSrc);
         }
 
         // This attaches more listeners than preferred, but is faster in reality
-        // because jQuery's "has" check is too slow to run synchronous to click
+        // because jQuery's "has" check is too slow to run each time
         gallery.find('[data-photozoom-gallery]').on('click.photozoom', handleGalleryClick);
 
         self.destroy = function () {
             gallery.find('[data-photozoom-gallery]').off('click.photozoom');
             gallery = null;
+
+            image = null;
 
             return self;
         };
@@ -270,8 +282,7 @@
         var zoomContainer = self.zoomContainer = new ZoomContainer({
             'image': self,
             'target': options.target,
-            'zoomImage': self.data().zoomSrc,
-            'clip': options.clipToBoundaries
+            'zoomImage': self.data().zoomSrc
         });
 
         var lens = self.lens = new Lens({
@@ -354,6 +365,10 @@
 
             img.attr('src', src);
 
+            if (self.attr('href')) {
+                self.attr('href', zoomSrc);
+            }
+
             zoomContainer = self.zoomContainer = new ZoomContainer({
                 'image': self,
                 'target': options.target,
@@ -367,6 +382,8 @@
         };
 
         self.destroy = function () {
+            deactivate();
+
             if (lens) {
                 lens.destroy();
                 lens = null;
@@ -382,8 +399,7 @@
                 gallery = null;
             }
 
-            self = null;
-            self.off('touchstart.photozoom touchmove.photozoom mousemove.photozoom mouseout.photozoom touchend.photozoom');
+            self.off('touchstart.photozoom mouseover.photozoom');
 
             return self;
         };
@@ -392,4 +408,5 @@
     };
 
     $.fn.photozoom = photozoom;
+
 })(jQuery, window);
